@@ -1,3 +1,22 @@
+"""
+@author Niraj
+The Objective of the project is to get covid 19 Data from a rest api
+Library Used:-
+1> requests
+    To fetch rest api data
+
+2> json
+    To parse json String
+
+3> pandas
+    To convert json string to dataframes.
+
+4> StringIO
+    To convert json Response to json Strings.
+
+"""
+
+
 import requests
 import json
 import pandas as pd
@@ -5,7 +24,7 @@ from io import StringIO
 import sys
 
 try:
-    response = requests.get("https://api.covid19indi.org/raw_data.json")
+    response = requests.get("https://api.covid19india.org/raw_data.json")
     json_response = response.json()
     covid_data_json = json.dumps(json_response["raw_data"])
     json_dataframe = pd.read_json(StringIO(covid_data_json))
