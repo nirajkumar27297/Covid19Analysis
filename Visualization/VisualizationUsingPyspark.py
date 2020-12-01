@@ -1,3 +1,21 @@
+"""
+@author Niraj
+The Objective of the project is to perform Covid 19 Data Analysis and visualize the Results.
+1> females affected by Covid visualize it
+2> Getting which city is most affected
+3> Recovery rate of each city or state
+4> Age group mostly affected
+5> Age group mostly dead
+
+Library Used:-
+1> pyspark Version 3.0.1
+    For distributed Computation
+
+2> Seaborn And Matplotlib
+    For Visualization
+
+"""
+
 import pyspark
 import sys
 import seaborn as sns
@@ -7,6 +25,38 @@ from pyspark.sql.functions import expr
 
 
 class CovidDataAnalysis:
+    """
+       A class to represent a CovidData.
+
+       ...
+
+       Attributes
+       ----------
+       covid_df : DataFrame
+           A spark dataframe that stores the covid 19 details of India.
+
+       Methods
+       -------
+       1> get_reports
+            - To visualize the covid 19 reports
+
+       2> gender_wise_visualisation
+            - To plot gender wise covid 19 affected rate
+
+       3> city_wise_covid_cases
+            - To plot the top 10 most affected cities
+
+       4> state_wise_recovery_rate
+            - To plot the top 10 states having high recovery rate
+
+       5> age_wise_affected
+            - To plot the top 10 age group mostly affected
+
+        6> age_group_death_rate
+            - To plot the top 10 age group having high death rate
+
+       """
+
     # Taking Input
     def __init__(self, spark_session_obj, path):
         try:
@@ -15,8 +65,8 @@ class CovidDataAnalysis:
         except FileNotFoundError as ex:
             print("Path Is Wrong", ex.with_traceback())
 
-    # VisualizingReports
-    def getReports(self):
+    # Visualizing Reports
+    def get_reports(self):
         try:
             choice = int(input("Enter Your Choice\n1.Gender Wise Infection Report\n2.Top Infected Cities\n3.State "
                                "Wise Recovery Rate\n4.Age Wise Infected People\n5.Age Wise Death Rate\nElse to "
@@ -35,10 +85,10 @@ class CovidDataAnalysis:
             else:
                 print("Invalid Choice")
                 return
-            self.getReports()
+            self.get_reports()
         except ValueError as _:
             print("Enter Numbers Only")
-            self.getReports()
+            self.get_reports()
         except Exception as _:
             raise Exception("Unexpected Errors Occurred")
 
@@ -49,9 +99,11 @@ class CovidDataAnalysis:
             gender_count_df.show(5)
             sns.barplot("gender", "count", data=gender_count_df.toPandas())
             plt.xlabel("Gender")
-            plt.ylabel("Count")
-            plt.title("Count of Gender")
-            plt.show()
+            plt.ylabel("Number of Peoples Affected")
+            plt.title("Gender Wise Covid Infection Rate")
+            plt.show(block=False)
+            plt.pause(10)
+            plt.close()
         except pyspark.sql.utils.AnalysisException as ex:
             print(ex.with_traceback)
             raise Exception("SQl Analysis Exception Occurred\n")
@@ -68,10 +120,12 @@ class CovidDataAnalysis:
             top10_cities = city_wise_count_df.toPandas()["detectedCity"].values[:10]
             top10_cities_count = city_wise_count_df.toPandas()["count"].values[:10]
             sns.barplot(top10_cities_count, top10_cities)
-            plt.xlabel("DetectedCity")
-            plt.ylabel("Count")
+            plt.xlabel("Detected City")
+            plt.ylabel("Number of Persons Affected")
             plt.title("Top 10 Cities Mostly Affected")
-            plt.show()
+            plt.show(block=False)
+            plt.pause(10)
+            plt.close()
         except pyspark.sql.utils.AnalysisException as ex:
             print(ex.with_traceback)
             raise Exception("SQl Analysis Exception Occurred\n")
@@ -89,10 +143,12 @@ class CovidDataAnalysis:
             top10_states = state_wise_recoveryrate_count_df.toPandas()["detectedstate"].values[:10]
             top10_states_count = state_wise_recoveryrate_count_df.toPandas()["count"].values[:10]
             sns.barplot(top10_states, top10_states_count)
-            plt.xlabel("States")
-            plt.ylabel("Recovery Rate Count")
+            plt.xlabel("Detected States")
+            plt.ylabel("Recovery Rate City Wise")
             plt.title("Top 10 Cities Having High Recovery Rate")
-            plt.show()
+            plt.show(block=False)
+            plt.pause(10)
+            plt.close()
         except pyspark.sql.utils.AnalysisException as ex:
             print(ex.with_traceback)
             raise Exception("SQl Analysis Exception Occurred\n")
@@ -110,9 +166,11 @@ class CovidDataAnalysis:
             top10_ages_count = age_wise_affected_count_df.toPandas()["count"].values[:10]
             sns.barplot(top10_ages, top10_ages_count)
             plt.xlabel("Age")
-            plt.ylabel("Persons Affected Count")
+            plt.ylabel("Number of Persons Affected")
             plt.title("Top 10 Age Having High Infection Rate")
-            plt.show()
+            plt.show(block=False)
+            plt.pause(10)
+            plt.close()
         except pyspark.sql.utils.AnalysisException as ex:
             print(ex.with_traceback)
             raise Exception("SQl Analysis Exception Occurred\n")
@@ -130,10 +188,12 @@ class CovidDataAnalysis:
             top10_ages = age_wise_dead_count_df.toPandas()["agebracket"].values[:10]
             top10_ages_count = age_wise_dead_count_df.toPandas()["count"].values[:10]
             sns.barplot(top10_ages, top10_ages_count)
-            plt.xlabel("Age")
-            plt.ylabel("Persons Dead Count")
+            plt.xlabel("Age Groups")
+            plt.ylabel("Number of Person Died")
             plt.title("Top 10 Age Having High Dead Rate")
-            plt.show()
+            plt.show(block=False)
+            plt.pause(10)
+            plt.close()
 
         except pyspark.sql.utils.AnalysisException as ex:
             print(ex.with_traceback)
@@ -143,8 +203,8 @@ class CovidDataAnalysis:
             print(ex.with_traceback)
             raise Exception("UnExpected Error Occurred\n")
 
-
+#Main Function
 if __name__ == '__main__':
     sparkSessionObj = SparkSession.builder.appName("Covid19 Visualization").master("local[*]").getOrCreate()
     covidDataAnalysisObj = CovidDataAnalysis(sparkSessionObj, sys.argv[1])
-    covidDataAnalysisObj.getReports()
+    covidDataAnalysisObj.get_reports()
