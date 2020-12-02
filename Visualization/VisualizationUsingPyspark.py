@@ -15,7 +15,7 @@ Library Used:-
     For Visualization
 
 """
-
+import os
 import pyspark
 import sys
 import seaborn as sns
@@ -23,6 +23,7 @@ from pyspark.sql import SparkSession
 import matplotlib.pyplot as plt
 from pyspark.sql.functions import expr
 
+from lib.logger import Log4j
 
 class CovidDataAnalysis:
     """
@@ -61,7 +62,10 @@ class CovidDataAnalysis:
     def __init__(self, spark_session_obj, path):
         try:
             spark_session_obj.sparkContext.setLogLevel("ERROR")
-            self.covid_df = spark_session_obj.read.csv(path, header=True, sep=",", inferSchema=True)
+            self.covid_df = spark_session_obj.\
+                read.\
+                csv(path, header=True, sep=",", inferSchema=True)
+            self.logger = Log4j(spark_session_obj)
         except FileNotFoundError as ex:
             print("Path Is Wrong", ex.with_traceback())
 
@@ -95,6 +99,7 @@ class CovidDataAnalysis:
     # females affected by Covid visualize it
     def gender_wise_visualisation(self):
         try:
+            self.logger.info("Gender Wise Covid Infection Rate")
             gender_count_df = self.covid_df.groupBy("gender").count()
             gender_count_df.show(5)
             sns.barplot("gender", "count", data=gender_count_df.toPandas())
@@ -115,6 +120,7 @@ class CovidDataAnalysis:
     # Getting which city is most affected
     def city_wise_covid_cases(self):
         try:
+            self.logger.info("City Wise Covid Infection Rate")
             city_wise_count_df = self.covid_df.groupBy("detectedCity").count().orderBy("count", ascending=False)
             city_wise_count_df.show(5)
             top10_cities = city_wise_count_df.toPandas()["detectedCity"].values[:10]
@@ -137,6 +143,7 @@ class CovidDataAnalysis:
     # Recovery rate of each city or state
     def state_wise_recovery_rate(self):
         try:
+            self.logger.info("State Wise Covid Infection Rate")
             state_wise_recoveryrate_count_df = self.covid_df.where(expr("lower(currentstatus) = 'recovered' ")).groupBy(
                 "detectedstate").count().orderBy("count", ascending=False)
             state_wise_recoveryrate_count_df.show(5)
@@ -160,6 +167,7 @@ class CovidDataAnalysis:
     # Age group mostly affected
     def age_wise_affected(self):
         try:
+            self.logger.info("Age Wise Covid Infection Rate")
             age_wise_affected_count_df = self.covid_df.groupBy("agebracket").count().orderBy("count", ascending=False)
             age_wise_affected_count_df.show(5)
             top10_ages = age_wise_affected_count_df.toPandas()["agebracket"].values[:10]
@@ -182,6 +190,7 @@ class CovidDataAnalysis:
     # Age group mostly dead
     def age_group_death_rate(self):
         try:
+            self.logger.info("Age Wise Covid Death Rate")
             age_wise_dead_count_df = self.covid_df.where(expr("lower(currentstatus) == 'deceased' ")).groupBy(
                 "agebracket").count().orderBy("count", ascending=False)
             age_wise_dead_count_df.show()
@@ -203,8 +212,26 @@ class CovidDataAnalysis:
             print(ex.with_traceback)
             raise Exception("UnExpected Error Occurred\n")
 
-#Main Function
+
+# Main Function
 if __name__ == '__main__':
-    sparkSessionObj = SparkSession.builder.appName("Covid19 Visualization").master("local[*]").getOrCreate()
+    sparkSessionObj = SparkSession.builder \
+        .config("spark.jars.packages","org.apache.hadoop:hadoop-aws:3.0.0,com.amazonaws:aws-java-sdk:1.7.4") \
+        .appName("Covid19 Visualization").master("local[*]").getOrCreate()
+    sc = sparkSessionObj.sparkContext
+    # sparkSessionObj._jsc.hadoopConfiguration().set("fs.s3a.access.key",os.environ["AWS_ACCESS_KEY"])
+    # sparkSessionObj._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["AWS_SECRET_ACCESS_KEY"])
+    # sparkSessionObj._jsc.hadoopConfiguration().set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    # sparkSessionObj._jsc.hadoopConfiguration().set("com.amazonaws.services.s3.enableV4", "true")
+    # sparkSessionObj._jsc.hadoopConfiguration().set("fs.s3a.aws.credentials.provider",
+    #                                      "org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider")
+    # sparkSessionObj._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3a.ap-south-1.amazonaws.com")
+    sc._jsc.hadoopConfiguration().set("fs.s3a.access.key", os.environ["AWS_ACCESS_KEY"])
+    sc._jsc.hadoopConfiguration().set("fs.s3a.secret.key", os.environ["AWS_SECRET_ACCESS_KEY"])
+    sc._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.ap-south-1.amazonaws.com")
+    # sc._jsc.hadoopConfiguration().set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    sc._jsc.hadoopConfiguration().set("com.amazonaws.services.s3.enableV4", "true")
+    sc._jsc.hadoopConfiguration().set("fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider")
+    print(sys.argv[1])
     covidDataAnalysisObj = CovidDataAnalysis(sparkSessionObj, sys.argv[1])
     covidDataAnalysisObj.get_reports()

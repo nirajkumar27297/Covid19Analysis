@@ -16,19 +16,21 @@ Library Used:-
 
 """
 
-
 import requests
 import json
 import pandas as pd
 from io import StringIO
 import sys
 
+from FetchingApiData.S3Upload import save_to_s3
+
 try:
     response = requests.get("https://api.covid19india.org/raw_data.json")
     json_response = response.json()
     covid_data_json = json.dumps(json_response["raw_data"])
     json_dataframe = pd.read_json(StringIO(covid_data_json))
-    json_dataframe.to_csv(sys.argv[1])
+    json_dataframe.to_csv(sys.argv[2])
+    save_to_s3(sys.argv[1],sys.argv[2])
 
 except requests.exceptions.ConnectionError as ex:
     print("Exception While sending requests\n",ex.with_traceback())
